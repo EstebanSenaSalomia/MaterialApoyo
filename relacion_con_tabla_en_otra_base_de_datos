@@ -1,0 +1,40 @@
+namespace App\WorkFlow\Prefacturacion\Certificado;
+
+use Illuminate\Database\Eloquent\Model;
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Arr;
+use OwenIt\Auditing\Auditable;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
+
+class PrefacturaCertificado extends Model implements AuditableContract
+
+   public function certificados()
+   {
+      $instance = $this->setConnection('clientes')//conectarse a otra base de datos
+        ->newRelatedInstance('App\WorkFlow\Solicitudes\Certificados\Certificado');
+
+      return new HasMany($instance->newQuery(),$this,'id_prefacturacion','id', null
+      //id = id de PrefacturaCertificado
+      //id_online es un tipo de llave foranea
+      );
+    }
+ }
+ //Hacer una relacion con una tabla que esta en una base de datos diferente
+namespace App\WorkFlow\Solicitudes\Certificados;
+
+use DB;
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+class Certificado extends Model {
+  public function _linea()
+  {
+     $instance = $this->setConnection('mysql')->newRelatedInstance('App\Comun\Mandante\MandanteLinea');
+     return new BelongsTo($instance->newQuery(), $this, 'id_mandante_linea', 'id', null);
+  }
+}
