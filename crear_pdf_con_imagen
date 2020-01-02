@@ -1,0 +1,29 @@
+// // Se esta usando la libreria pdfmake//
+import pdfMake from "pdfmake/build/pdfmake";
+import pdfFonts from "pdfmake/build/vfs_fonts";
+pdfMake.vfs = pdfFonts.pdfMake.vfs;
+
+let request = new FormData;
+                this.iframe && request.append('urlPage',this.iframe);
+                axios.post(this.app_url + '/captura_page', request)
+                .then(response => {
+                    this.capturaPage = response.data.screenshot;
+                    let doc = {
+                        content: [
+                            {
+                              image: "data:image/jpeg;base64," + this.capturaPage,
+                              width: 320,
+                              height: 200
+                            },
+                        ]
+                    }
+                    pdfMake.createPdf(doc).open();
+                
+                })
+                .catch((error) => {
+                    this.errorCatch(error);
+                })
+                .finally(() => {
+                    ventanaCargando();
+                    this.url.filtrando = false;
+                });
