@@ -1,0 +1,62 @@
+//Funsion para hacer un recorte aproximado de la palabra que se necesita
+
+public function substr_between($string, $first, $_first = 1, $last = '', $_last = 1, $included = true)
+    {
+        preg_match_all('/'.str_replace('/', "\/", $first).'/', $string, $matches, PREG_OFFSET_CAPTURE);
+        $first_position = isset($matches[0][$_first - 1]) ? $matches[0][$_first - 1][1] : 0;
+
+        preg_match_all('/'.str_replace('/', "\/", $last).'/', $string, $matches, PREG_OFFSET_CAPTURE);
+        $last_position = 1;
+        do {
+            $last_position = isset($matches[0][$_last - 1]) ? $matches[0][$_last - 1][1] : $last_position;
+            $_last++;
+            $last_position++;
+        } while ($last_position <= $first_position);
+
+        $length = $last_position - $first_position;
+
+        if ($included) {
+            $retorno = trim(substr($string, $first_position, $length + strlen($last) - 1));
+            return  count($retorno) > 0 ? trim($retorno) : null;
+        }
+        else {
+            $retorno = trim(substr($string, $first_position + strlen($first), $length - strlen($first) - 1));
+            return count($retorno) > 0 ? trim($retorno) : null;
+        }
+    }
+    //hacer una limpieza de la variable despues de haber pasado por substr_between
+        public function clean($texto, $elemento=[':','.'], $sub = '')
+    {
+        if(empty($texto)) return null;
+
+        if(gettype($elemento) == 'array' ){
+            foreach ($elemento as $key => $ele) {
+                $texto = str_replace($ele,$sub,$texto);
+            }
+            return trim($texto);
+        }
+        return trim( str_replace($elemento,$sub,$texto ) );
+    }
+    
+    //aqui llamamos a la libreria php 
+    use Spatie\PdfToText\Pdf;
+
+    $extension = $request->file('archivo')->extension();
+    $nombre = $request->archivo->getClientOriginalName();
+    $path = $request->archivo->path();
+
+    $pdf = new Pdf();
+    $pdf->setPdf($path);
+    $pdf->setOptions(["layout", "r 96"]);
+    $text = $pdf->text();
+    
+    $numSolicitud = $this->substr_between($text, 'Número de Solicitud:', 1, "Año:", 1, false);
+    $año = $this->substr_between($text, 'Año:', 1, "Patente", 1, false);
+    $ppu = $this->substr_between($text, 'PPU', 1, "Estado", 1, false);
+    $estadoConsulta = substr($text, strpos($text,'Estado')+7);
+    $estadoConsulta = trim($estadoConsulta);
+    $ppu = $this->clean($ppu);
+    $ppu = trim(str_replace(")", "", $ppu));
+    $numSolicitud = $this->clean($numSolicitud);
+    $año = $this->clean($año);
+    
