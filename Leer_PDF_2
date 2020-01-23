@@ -1,0 +1,191 @@
+use Spatie\PdfToText\Pdf;
+use App\Http\Controllers\Controller;
+
+public function leerArchivo(Request $request)
+    {
+        try {
+            // LEER PDF
+            $extension = $request->file('archivo')->extension();
+            $path = $request->archivo->path();
+
+            $pdf = new Pdf();
+            $pdf->setPdf($path);
+            $pdf->setOptions(["layout", "r 96"]);
+            // $text = $this->substr_between($pdf->text(), 'Privacidad - Condiciones', 1, 'http', 1, false);
+            $text = $pdf->text();
+
+            $data['success'] = true;
+            $data['mensaje'] = 'Solicitud actualizada exitosamente.';
+            $data["nombre"] = $request->archivo->getClientOriginalName();
+            $data["solicitud"] = $this->cleanString(
+                $this->substr_between($text, 'Número de Solicitud:', 1, "Año:", 1, false)
+                , [':', '.']
+                , ['', '']
+            );
+            $data["ano"] = $this->cleanString(
+                $this->substr_between($text, 'Año:', 1, "Patente", 1, false)
+                , [':', '.']
+                , ['', '']
+            );
+            $data["ppu"] = $this->cleanString(
+                $this->substr_between($text, 'PPU', 1, "Estado", 1, false)
+                , [':', '.', ')']
+                , ['', '', '']
+            );
+            $data["estado"] = $this->cleanString(
+                $this->substr_between($text, 'Estado:', 1, '', 1, false)
+                , [':', '.']
+                , ['', '']
+            );
+
+            // VALIDAR QUE LECTURA NO SE GENERE CON ERROR
+            $errores = [];
+            $estados = [
+                'ACEPTADA' => ['estado' => 326, 'archivo' => 212],
+                'RECHAZADA' => ['estado' => 328, 'archivo' => 211],
+                'INCONSISTENCIA DE DATOS' => ['estado' => 329, 'archivo' => 204],
+                'CONSULTE DIRECTAMENTE EN EL RNVM' => ['estado' => 488, 'archivo' => 204],
+                'RECLAMO REGISTRO CIVIL' => ['estado' => 489, 'archivo' => 204],
+                'INGRESADA' => ['estado' => 333, 'archivo' => 202],
+            ];
+            if (!is_numeric($data["solicitud"])) {
+                $errores[] = 'El Número de Solicitud leido no es numérico.';
+            }
+            if (!is_numeric($data["ano"])) {
+                $errores[] = 'El Año leido no es numérico.';
+            }
+            if (!in_array($data['estado'], array_keys($estados))) {
+                $errores[] = 'El estado leído no es válido.';
+            }
+            if (!$this->modulo11($data["ppu"])) {
+                $errores[] = 'La PPU leida no es válida.';
+            }
+
+            if (count($errores) > 0) {
+                $data["success"] = false;
+                $data["mensaje"] = '<li>'.implode('</li><li>', $errores).'</li>';
+                return response()->json([
+                    "datos" => $data
+                ]);
+            }
+
+            // BUSCAR RUTA-ENVIO-DETALLE
+            $rutaEnvioDetalle = RutaEnvioDetalle::where('num_solicitud', $data["solicitud"])
+            ->whereHas('rutaDetalle.contrato_vehiculo._vehiculo',function($query) use($data){
+                $tmp = explode('-', $data['ppu']);
+                $ppu = mb_strtoupper($tmp[0]);
+
+                $query->where(DB::raw('UPPER(placa)'), $ppu)
+                ->where('ano', $data["ano"]);
+            })
+            ->with('rutaDetalle.ruta')
+            ->with('rutaDetalle.contrato_vehiculo._contrato')
+            ->with('rutaDetalle.contrato_vehiculo._contrato.cliente_pertenece')
+            ->with('rutaDetalle.contrato_vehiculo._vehiculo')
+            ->first();
+            if (!$rutaEnvioDetalle) {
+                $data["success"] = false;
+                $data["mensaje"] = "No se ha encontrado la gestión relacionada al archivo cargado";
+                return response()->json([
+                    "datos" => $data
+                ]);
+            }
+
+            DB::beginTransaction();
+
+            // ACTUALIZAR ESTADO RUTA_ENVIO_DETALLE
+            $rutaEnvioDetalle->estado = $estados[$data['estado']]['estado'];
+            $rutaEnvioDetalle->fecha_resolucion = Carbon::now();
+            // almacenar fecha de última modificación de estado para el envío
+            $rutaEnvioDetalle->ultima_consulta_estado = Carbon::now();
+            $rutaEnvioDetalle->update();
+
+            // ALMACENAR ARCHIVO
+            if (Storage::disk('public')->putFileAs('pdf/primera/', $request->file('archivo'), $filename)) {
+                $filename = $estados[$data['estado']]['archivo'].'_rd_'.$rutaDetalle->id.'_'.date("Ymd_His").'.pdf';
+                $this->almacenarArchivo(
+                    $filename,
+                    'pdf/primera/'.$filename,
+                    'tbl_ruta_detalle_archivo',
+                    'id',
+                    'id_ruta_detalle',
+                    $rutaDetalle->id,
+                    'id_archivo',
+                    $estados[$data['estado']]['archivo']
+                );
+            }
+
+            // ACTUALIZAR TABLAS CORRESPONDIENTES
+            $request->merge(['observaciones' => 'Cambio de estado por lectura automática de archivo']);
+            $this->actualizarEstadoRegistro($rutaEnvioDetalle, $request);
+
+            DB::commit();
+            // actualizar registro cierre
+            $data["mensaje"] = "Proceso realizado satisfactorioamente";
+            return response()->json([
+                "exito" => "Se ha leido el archivo con exito y se ha actualizado la solicitud",
+                "datos" => $data
+            ],200);
+        }
+        catch (\Exception $error) {
+            DB::rollBack();
+                return response()->json([
+                'error' => $error->getMessage() . ' Linea: '. $error->getLine()
+            ], 500);
+        }
+    }
+    //esta clase es llamada extiende desde el controlador por eso se utiliza el $this->
+    public function cleanString($string, $find = null, $replace = null)
+    {
+        if (!$find) {
+            $find = [
+                'á', 'à', 'ä', 'Á', 'À', 'Ä'
+                , 'é', 'è', 'ë', 'É', 'È', 'Ë'
+                , 'í', 'ì', 'ï', 'Í', 'Ì', 'Ï'
+                , 'ó', 'ò', 'ö', 'Ó', 'Ò', 'Ö'
+                , 'ú', 'ù', 'ü', 'Ú', 'Ù', 'Ü'
+                , 'ń', 'ǹ', 'ñ', 'Ń', 'Ǹ', 'Ñ'
+                , '/', '\\', '\''
+            ];
+        }
+        if (!$replace) {
+            $replace = [
+                'a', 'a', 'a', 'A', 'A', 'A'
+                , 'e', 'e', 'e', 'E', 'E', 'E'
+                , 'i', 'i', 'i', 'I', 'I', 'I'
+                , 'o', 'o', 'o', 'O', 'O', 'O'
+                , 'u', 'u', 'u', 'U', 'U', 'U'
+                , 'n', 'n', 'n', 'N', 'N', 'N'
+                , '-', '-', '.'
+            ];
+        }
+
+        if (!is_array($replace) && is_array($find)) {
+            $replace = [$replace];
+        }
+
+        return str_replace($find, $replace, $string);
+    }
+    public function substr_between($string, $first, $_first = 1, $last = '', $_last = 1, $included = true)
+    {
+        preg_match_all('/'.str_replace('/', "\/", $first).'/', $string, $matches, PREG_OFFSET_CAPTURE);
+        $first_position = isset($matches[0][$_first - 1]) ? $matches[0][$_first - 1][1] : 0;
+
+        preg_match_all('/'.str_replace('/', "\/", $last).'/', $string, $matches, PREG_OFFSET_CAPTURE);
+        $last_position = 1;
+        do {
+            $last_position = isset($matches[0][$_last - 1]) ? $matches[0][$_last - 1][1] : $last_position;
+            $_last++;
+            $last_position++;
+        } while ($last_position <= $first_position);
+
+        $length = $last != '' ? $last_position - $first_position : strlen($string);
+        if ($included) {
+            $retorno = trim(substr($string, $first_position, $length + strlen($last) - 1));
+        }
+        else {
+            $retorno = trim(substr($string, $first_position + strlen($first), $length - strlen($first) - 1));
+        }
+
+        return count($retorno) > 0 ? $retorno : null;
+    }
