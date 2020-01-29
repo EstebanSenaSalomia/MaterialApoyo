@@ -1,0 +1,34 @@
+<?php
+
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Database\Migrations\Migration;
+
+class UpdateAreasRrhhIdCargo extends Migration
+{
+    /**
+     * Run the migrations.
+     *
+     * @return void
+     */
+    public function up()
+    {
+        Schema::table('tbl_areas_rrhh', function(Blueprint $table){
+            $table->integer('id_cargo')->unsigned()->nullable()->comment('id de la tabla tbl_cargos_rrhh');
+            $table->foreign('id_cargo')->references('id')->on('tbl_cargos_rrhh');
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     *
+     * @return void
+     */
+    public function down()
+    {
+        Schema::table('tbl_areas_rrhh',function(Blueprint $table){
+            $table->dropForeign('tbl_areas_rrhh_id_cargo_foreign');
+            $table->dropColumn('id_cargo');
+        });
+    }
+}
