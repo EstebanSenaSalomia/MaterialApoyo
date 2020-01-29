@@ -1,0 +1,24 @@
+actualizarSecciones() {
+                ventanaCargando();
+                this.limpiarMensajes();
+
+                let request = new FormData;
+                this.areas.id && request.append('id', this.areas.id);
+                this.areas._secciones.forEach((seccion, key) => {
+                    request.append('secciones[' + key + ']', seccion.id);
+                });
+
+                axios.post(this.app_url + '/secciones', request)
+                .then((response) => {
+                    if ('success' in response.data) {
+                        this.filtrar(this.rows.current_page);
+                        $('#modalSecciones').modal('hide');
+                        this.successMessage = this.$root.gestionarErrorResponse(response.data.success);
+                    }
+                    else {
+                        this.errorModal = this.$root.gestionarErrorResponse(response.data);
+                    }
+                })
+                .catch((error) => this.errorModal = this.$root.gestionarErrorResponse(error) )
+                .finally(() => ventanaCargando() );
+            },
