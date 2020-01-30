@@ -1,0 +1,27 @@
+public function cargos(Request $request){
+        $this->validate($request, [
+            'id' => 'required|exists:tbl_areas_rrhh,id',
+            'cargos' => 'sometimes|array',
+        ]);
+        try {
+            DB::beginTransaction();
+            $area = AreaRRHH::where('id',$request->id)->firstOrFail();
+
+            //desasociar relaciones
+            $cargos = CargosRRHH::whereHas('_area',function($query) use($request){
+                $query->where('id_area',$request->id);
+            })->update(['id_area' => null]);
+            
+            //insertar nuevas relaciones
+            if ($request->cargos && count($request->cargos) > 0) {
+                $nuevosCargos = CargosRRHH::whereIn('id',$request->cargos)->get();
+                $area->_cargos()->saveMany($nuevosCargos);
+            }
+            DB::commit();
+            return response()->json(['success' => 'cargos asignados al area exitosamente'], 200);
+
+        } catch (\Exception $error) {
+            DB::rollback();
+            return response()->json(['error' => $error->getMessage()], 500);
+        }
+    }
