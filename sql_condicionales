@@ -1,0 +1,43 @@
+$query = "
+            COUNT(
+            IF ( COALESCE (id_categoria, id_clasificacion_usuario, 0) = 5,
+                IF(TIMESTAMPDIFF(HOUR, CURRENT_TIMESTAMP, sla_revision_inicio) <= 2 , 1, NULL),
+                NULL
+               )
+            ) as problema_correcto,
+            COUNT(
+            IF ( COALESCE (id_categoria, id_clasificacion_usuario, 0) = 5,
+                IF(TIMESTAMPDIFF(HOUR, CURRENT_TIMESTAMP, sla_revision_inicio) >= 3 , 1, NULL),
+                NULL
+               )
+            ) as problema_incorrecto,
+            COUNT(
+            IF ( COALESCE (id_categoria, id_clasificacion_usuario, 0) = 4,
+                IF(TIMESTAMPDIFF(DAY, CURRENT_TIMESTAMP, sla_revision_inicio) <= 7 , 1, NULL),
+                NULL
+               )
+            ) innovacion_correcto,
+            COUNT(
+            IF ( COALESCE (id_categoria, id_clasificacion_usuario, 0) = 4,
+                IF(TIMESTAMPDIFF(DAY, CURRENT_TIMESTAMP, sla_revision_inicio) >= 7 , 1, NULL),
+                NULL
+               )
+            ) as innovacion_incorrecto,
+
+            COUNT(
+            IF ( COALESCE (id_categoria, id_clasificacion_usuario, 0) = 6,
+                IF(TIMESTAMPDIFF(DAY, CURRENT_TIMESTAMP, sla_revision_inicio) <= 1 , 1, NULL),
+                NULL
+               )
+            ) as mejora_correcto,
+            COUNT(
+            IF ( COALESCE (id_categoria, id_clasificacion_usuario, 0) = 6,
+                IF(TIMESTAMPDIFF(DAY, CURRENT_TIMESTAMP, sla_revision_inicio) >= 2 , 1, NULL),
+                NULL
+               )
+            ) as mejora_incorrecto
+        ";
+        // clasificados
+        $enviados = TicketNew::whereIn('id_estado', [553,552])
+        ->select(DB::raw($query))
+        ->first();
