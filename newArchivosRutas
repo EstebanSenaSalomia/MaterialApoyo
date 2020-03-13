@@ -1,0 +1,268 @@
+<?php
+
+namespace App\Providers;
+
+use Illuminate\Support\Facades\Route;
+use Illuminate\Foundation\Support\Providers\RouteServiceProvider as ServiceProvider;
+
+class RouteServiceProvider extends ServiceProvider
+{
+    /**
+     * This namespace is applied to your controller routes.
+     *
+     * In addition, it is set as the URL generator's root namespace.
+     *
+     * @var string
+     */
+    protected $namespace = 'App\Http\Controllers';
+
+    /**
+     * Define your route model bindings, pattern filters, etc.
+     *
+     * @return void
+     */
+    public function boot()
+    {
+        //
+
+        parent::boot();
+    }
+
+    /**
+     * Define the routes for the application.
+     *
+     * @return void
+     */
+    public function map()
+    {
+        $this->mapApiRoutes();
+
+        $this->mapWebRoutes();
+
+        //
+    }
+
+    /**
+     * Define the "web" routes for the application.
+     *
+     * These routes all receive session state, CSRF protection, etc.
+     *
+     * @return void
+     */
+    protected function mapWebRoutes()
+    {
+       /* Route::middleware('web')
+             ->namespace($this->namespace)
+             ->group(base_path('routes/web.php'));*/
+
+        Route::group([
+            'namespace' => $this->namespace, 'middleware' => 'web',
+        ], function ($router) {
+            require base_path('routes/web.php');
+        });
+
+        Route::group([
+            'namespace' => $this->namespace, 'middleware' => 'web',
+        ], function ($router) {
+            require base_path('routes/sistema.php');
+        });
+
+         Route::group([
+             'namespace' => $this->namespace, 'middleware' => 'web',
+         ], function ($router) {
+             require base_path('routes/notaria.php');
+         });
+
+        Route::group([
+            'namespace' => $this->namespace, 'middleware' => 'web',
+        ], function ($router) {
+            require base_path('routes/inventario.php');
+        });
+
+		Route::group([
+            'namespace' => $this->namespace, 'middleware' => 'web',
+        ], function ($router) {
+            require base_path('routes/seguro_cliente.php');
+        });
+
+        Route::group([
+            'namespace' => $this->namespace, 'middleware' => 'web',
+        ], function ($router) {
+            require base_path('routes/cliente.php');
+        });
+
+        Route::group([
+            'namespace' => $this->namespace, 'middleware' => 'web',
+        ], function ($router) {
+            require base_path('routes/comun.php');
+        });
+
+        Route::group([
+            'namespace' => $this->namespace, 'middleware' => 'web',
+        ], function ($router) {
+            require base_path('routes/recepcion.php');
+        });
+
+        Route::group([
+             'namespace' => $this->namespace, 'middleware' => 'web',
+        ], function ($router) {
+             require base_path('routes/maestrobienes.php');
+        });
+
+		Route::group([
+            'namespace' => $this->namespace, 'middleware' => 'web',
+        ], function ($router) {
+            require base_path('routes/custodia.php');
+        });
+
+        Route::group([
+            'namespace' => $this->namespace, 'middleware' => 'web',
+        ], function ($router) {
+            require base_path('routes/carpetadigital.php');
+        });
+
+
+        Route::group([
+            'namespace' => $this->namespace, 'middleware' => 'web',
+        ], function ($router) {
+            require base_path('routes/normalizacion.php');
+        });
+
+        Route::group([
+            'namespace' => $this->namespace, 'middleware' => 'web',
+        ], function ($router) {
+            require base_path('routes/rastreo.php');
+        });
+
+        Route::group([
+            'namespace' => $this->namespace, 'middleware' => 'web',
+        ], function ($router) {
+            require base_path('routes/monitorllamadas.php');
+        });
+
+        Route::group([
+            'namespace' => $this->namespace, 'middleware' => 'web',
+        ], function ($router) {
+            require base_path('routes/contribuciones.php');
+        });
+
+        Route::group([
+            'namespace' => $this->namespace, 'middleware' => 'web',
+        ], function ($router) {
+            require base_path('routes/administracioncav.php');
+        });
+
+        Route::group([
+            'namespace' => $this->namespace, 'middleware' => 'web',
+        ], function ($router) {
+            require base_path('routes/primera.php');
+        });
+
+        Route::group([
+            'namespace' => $this->namespace.'\Importador', 'middleware' => 'web',
+        ], function ($router) {
+            require base_path('routes/importador.php');
+        });
+
+        Route::group([
+            'namespace' => $this->namespace, 'middleware' => 'web',
+        ], function ($router) {
+            require base_path('routes/centro_de_escaneo.php');
+        });
+
+        Route::group([
+            'namespace' => $this->namespace, 'middleware' => 'web',
+        ], function ($router) {
+            require base_path('routes/rrhh.php');
+        });
+
+        Route::group([
+            'namespace' => $this->namespace, 'middleware' => 'web',
+        ], function ($router) {
+            require base_path('routes/dispositivotag.php');
+        });
+
+        Route::group([
+            'namespace' => $this->namespace, 'middleware' => 'web',
+        ], function ($router) {
+            require base_path('routes/finanzas.php');
+        });
+
+        Route::group([
+            'namespace' => $this->namespace, 'middleware' => 'web',
+        ], function ($router) {
+            require base_path('routes/servicio_al_cliente.php');
+        });
+
+        Route::group([
+            'namespace' => $this->namespace, 'middleware' => 'web',
+        ], function ($router) {
+            require base_path('routes/revision_documental.php');
+        });
+
+        Route::group([
+            'namespace' => $this->namespace, 'middleware' => 'web',
+        ], function ($router) {
+            require base_path('routes/transferencia.php');
+        });
+
+        Route::group([
+            'namespace' => $this->namespace, 'middleware' => 'web',
+        ], function ($router) {
+            require base_path('routes/asistencias.php');
+        });
+
+        Route::group([
+            'namespace' => $this->namespace, 'middleware' => 'web',
+        ], function ($router) {
+            require base_path('routes/vuecomponents.php');
+        });
+
+        Route::group([
+            'namespace' => $this->namespace, 'middleware' => 'web',
+        ], function ($router) {
+            require base_path('routes/soap.php');
+        });
+
+        Route::group([
+            'namespace' => $this->namespace, 'middleware' => 'web',
+        ], function ($router) {
+            require base_path('routes/permisocirculacion.php');
+        });
+
+        Route::group([
+            'namespace' => $this->namespace, 'middleware' => 'web',
+        ], function ($router) {
+            require base_path('routes/workflow.php');
+        });
+
+        Route::group([
+            'namespace' => $this->namespace, 'middleware' => 'web',
+        ], function ($router) {
+            require base_path('routes/demco.php');
+        });
+
+        //Ruta publica
+        Route::group([
+            'namespace' => $this->namespace,'middleware' => 'web',
+        ], function ($router) {
+            require base_path('routes/public.php');
+        });
+    }
+
+    /**;
+
+     * Define the "api" routes for the application.
+     *
+     * These routes are typically stateless.
+     *
+     * @return void
+     */
+    protected function mapApiRoutes()
+    {
+        Route::prefix('api')
+             ->middleware('api')
+             ->namespace($this->namespace)
+             ->group(base_path('routes/api.php'));
+    }
+}
