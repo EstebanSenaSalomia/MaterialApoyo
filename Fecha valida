@@ -1,1 +1,23 @@
-->whereDate('created_at', '>=', DB::raw('subdate(current_date, interval 15 day)'))
+public function scopeCargadas($query)
+	{
+		return $query
+		->where(function($query){
+			// solo pendientes
+			$query->whereNotNull('homologado_numero')
+			//solicitudes con homologado cargado y que no tengan un tiempo mayor a 15 dias despues de subir el archivo
+			->whereDate('homologado_fecha_carga', '>=', DB::raw('subdate(current_date, interval 15 day)'));
+		})
+		->orWhere(function($query){
+			$query->where(function($query){
+				//Cuando la solicitud tiene entre 1 y 15 dias sin subir homologado, ver solicidtudes
+				$query->whereDate('created_at', '<', DB::raw('subdate(current_date, interval 15 day)'));
+				//Cuando la solicitud tiene entre mas de 30 dias sin subir homologado, no ver solicidtudes
+				$query->whereDate('created_at', '>=', DB::raw('subdate(current_date, interval 30 day)'));
+			});
+		})
+		// solo los de su proveedor
+		->when(!Auth::user()->es_admin, function($query) {
+			$proveedores = Auth::user()->_proveedores()->pluck('sist_proveedores.id')->toArray();
+			$query->whereIn('proveedor_id', $proveedores);
+		});
+	}
