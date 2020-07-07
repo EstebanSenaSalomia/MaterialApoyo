@@ -1,0 +1,1 @@
+->whereDate('created_at', '>=', DB::raw('subdate(current_date, interval 15 day)'))
