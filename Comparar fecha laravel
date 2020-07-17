@@ -1,0 +1,2 @@
+    $query->whereDate(DB::raw('date(tbl_wf_solicitudes_visado_contrato.created_at)'),$fecha);
+    //la variable fecha esta formateada (Y,m,d)
